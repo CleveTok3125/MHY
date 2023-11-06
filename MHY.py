@@ -38,8 +38,7 @@ try:
         os.system('cls')
         size = str(round(int(latest['package_size']) / 1024**3, 2)) + 'GB'
         md5 = latest['md5']
-        print("Download " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n\nPress any key to download...")
-        input("")
+        print("Download " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
         return latest['path']
 
     def latest_voice_packs(mode):
@@ -53,29 +52,27 @@ try:
         size = str(round(int(cdvoice['package_size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
-        print("Download " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n\nPress any key to download...")
-        input("")
+        print("Download " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
         return cdvoice['path']
 
     def latest_segments():
         os.system('cls')
         size = str(round(int(latest['package_size']) / 1024**3, 2)) + 'GB'
-        print("Download " + latest_ver + " (no voice packs + segments)\nSize: " + size + "\n\nPress any key to show URL...")
-        input("")
+        print("Download " + latest_ver + " (no voice packs + segments)\nSize: " + size + "\n")
+        list2download = []
         for i in latest['segments']:
             md5 = i['md5']
-            print("URL: " + i['path'] + "\nMD5: " + md5.upper() + "\n")
-        print("Press any key to exit...")
-        input("")
-        exit()
+            url = i['path']
+            list2download.append(url)
+            print("File name: " + os.path.split(url)[-1] + "\nMD5: " + md5.upper() + "\n")
+        return list2download
 
     def diffs_no_voice_packs(mode):
         os.system('cls')
         size = str(round(int(diffs[mode]['package_size']) / 1024**3, 2)) + 'GB'
         md5 = diffs[mode]['md5']
         old_ver = diffs[mode]['version']
-        print("Download " + old_ver + " to " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n\nPress any key to download...")
-        input("")
+        print("Download " + old_ver + " to " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
         return diffs[mode]['path']
 
     def diffs_voice_packs(mode, mode1):
@@ -90,8 +87,7 @@ try:
         size = str(round(int(cdvoice['package_size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
-        print("Download " + old_ver + " to " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n\nPress any key to download...")
-        input("")
+        print("Download " + old_ver + " to " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
         return cdvoice['path']
 
     def folder_chooser():
@@ -108,15 +104,22 @@ try:
         )
         return os.path.normpath(str(shell.SHGetPathFromIDList(pidl))[2:-1])
 
-    def download(link, path):
+    def download(input_link, path):
         from tqdm.auto import tqdm
-        file = path + "\\" + link.split('/')[-1]
-        response = requests.get(link, stream=True)
-        with tqdm.wrapattr(open(file, "wb"), "write", miniters=1,
-                           total=int(response.headers.get('content-length', 0)),
-                           desc=file) as fout:
-            for chunk in response.iter_content(chunk_size=4096):
-                fout.write(chunk)
+        def downloader(link, path):
+            file = path + "\\" + link.split('/')[-1]
+            response = requests.get(link, stream=True)
+            with tqdm.wrapattr(open(file, "wb"), "write", miniters=1,
+                               total=int(response.headers.get('content-length', 0)),
+                               desc=file) as fout:
+                for chunk in response.iter_content(chunk_size=4096):
+                    fout.write(chunk)
+
+        if type(input_link) == list:
+            for link in input_link:
+                downloader(link, path)
+        else:
+            downloader(input_link, path)
 
     def archive(latest_ver):
         os.system('cls')
@@ -154,6 +157,14 @@ try:
             
         exit()
 
+    def downloadwithdownloader(url):
+        import easygui, time
+        downloader_path = easygui.fileopenbox(msg='Select downloader', filetypes=['*.exe'])
+        if type(url) == list:
+            os.system("start " + downloader_path + " " + " ".join(url))
+        else:
+            os.system("start " + downloader_path + " " + url)
+
     check_connection()
 
     try:
@@ -186,7 +197,7 @@ try:
             print("\n1. Chinese\n2. English\n3. Japanese\n4. Korean\n")
             url = latest_voice_packs(int(input("Select one: "))-1)
         elif menu1 == 3:
-            latest_segments()
+            url = latest_segments()
         else:
             input("Invalid selection\n")
             exit()
@@ -289,14 +300,29 @@ try:
         input("Invalid selection\n")
         exit()
 
-    path = folder_chooser()
     '''
     print("Downloading...\nURL:", url)
     print()
     '''
 
     try:
-        download(url, path)
+        menu = int(input("1. Use built-in downloader\n2. Use 3rd party downloader\n3. Show URL(s)\nSelect one: "))
+        if menu == 1:
+            path = folder_chooser()
+            download(url, path)
+        elif menu == 2:
+            downloadwithdownloader(url)
+            input()
+        elif menu == 3:
+            if type(url) == list:
+                for i in url:
+                    print(i)
+            else:
+                print(url)
+            input()
+        else:
+            input("Invalid selection\n")
+            exit()
     except:
         print('The file could not be downloaded, the link was removed, or the link could not be fetched due to publisher not uploading link for this item. Switch to archive mode to find available links.')
         print('Requested URL: "'+url+'"')
