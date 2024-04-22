@@ -1,5 +1,7 @@
 try:
     import requests, json, os
+    global pre_download
+    pre_download = False
 
     try:
         dic_path = open('archive-mode', 'r').read()
@@ -16,7 +18,7 @@ try:
         except:
             print("Unable to fetch URL")
             input("\nPress any key to exit...")
-            exit()
+            os._exit(0)
         dic = json.loads((r).text)
         game = dic['data']['game']
         latest = game['latest']
@@ -32,7 +34,7 @@ try:
         if not retcode == 0 and mess == 'OK':
             print("Unable to fetch URL\n" + "Return code: " + retcode + "\n Message: " + mess)
             input("\nPress any key to exit...")
-            exit()
+            os._exit(0)
 
     def latest_no_voice_packs():
         os.system('cls')
@@ -133,11 +135,16 @@ try:
             try:
                 os.mkdir('archive')
             except:
-                None
+                pass
 
             content = requests.get(api, stream=True)
-            open('archive/archive-'+str(latest_ver)+'.json', 'wb').write(r.content)
-            input('Successfully archived: ' + '/archive/archive-'+str(latest_ver)+'.json')
+            if pre_download:
+                archive_path = 'archive/archive-'+str(latest_ver)+'-predownload.json'
+            else:
+                archive_path = 'archive/archive-'+str(latest_ver)+'.json'
+            
+            open(archive_path, 'wb').write(r.content)
+            input('Successfully archived: ' + archive_path)
 
         elif menu == 2:
             import easygui
@@ -155,7 +162,7 @@ try:
                 None
             input('Changed to normal mode. Run again for changes.\n')
             
-        exit()
+        os._exit(0)
 
     def downloadwithdownloader(url):
         import easygui, time
@@ -174,9 +181,10 @@ try:
             latest = game['latest']
             diffs = game['diffs']
             latest_ver = latest['version']
+            pre_download = True
         os.system('cls')
     except:
-        None
+        pass
 
     print("Latest version:", latest_ver)
     print("1. Get full", latest_ver)
@@ -200,7 +208,7 @@ try:
             url = latest_segments()
         else:
             input("Invalid selection\n")
-            exit()
+            os._exit(0)
     elif menu == 2:
         print("\n1. Patch update")
         print("2. Voice packs update\n")
@@ -212,7 +220,7 @@ try:
             url = diffs_voice_packs(0, int(input("Select one: "))-1)
         else:
             input("Invalid selection\n")
-            exit()
+            os._exit(0)
     elif menu == 3:
         print("\n1. Patch update")
         print("2. Voice packs update\n")
@@ -224,7 +232,7 @@ try:
             url = diffs_voice_packs(1, int(input("Select one: "))-1)
         else:
             input("Invalid selection\n")
-            exit()
+            os._exit(0)
     elif menu == 4:
         import easygui, shutil, keyboard
         print("'Re-download resources' is a method of re-downloading the entire game content by scanning the game data map and downloading the necessary files to refresh. Only use to recover corrupted game data files, do not update new versions or restore missing or non-existent files in this way.\nMake sure the current installed game version is "+str(latest['version'])+"\nPress Enter key to continue")
@@ -239,7 +247,7 @@ try:
         try:
             os.mkdir(os.path.join(os.getcwd(), '$temp'))
         except:
-            None
+            pass
         temp_game_dir = os.path.join(game_dir, '$temp')
         logs = []
         for dirname, dirnames, filenames in os.walk('.'):
@@ -293,12 +301,12 @@ try:
         while True:
             if keyboard.is_pressed('esc'):
                 break
-        exit()
+        os._exit(0)
     elif menu == 0:
         archive(latest_ver)
     else:
         input("Invalid selection\n")
-        exit()
+        os._exit(0)
 
     '''
     print("Downloading...\nURL:", url)
@@ -322,11 +330,11 @@ try:
             input()
         else:
             input("Invalid selection\n")
-            exit()
+            os._exit(0)
     except:
         print('The file could not be downloaded, the link was removed, or the link could not be fetched due to publisher not uploading link for this item. Switch to archive mode to find available links.')
         print('Requested URL: "'+url+'"')
         input()
-    exit()
+    os._exit(0)
 except:
-    None
+    pass
