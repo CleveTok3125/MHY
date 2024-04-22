@@ -165,7 +165,7 @@ try:
         os._exit(0)
 
     def downloadwithdownloader(url):
-        import easygui, time
+        import easygui
         downloader_path = easygui.fileopenbox(msg='Select downloader', filetypes=['*.exe'])
         if type(url) == list:
             os.system("start " + downloader_path + " " + " ".join(url))
@@ -174,6 +174,73 @@ try:
 
     check_connection()
 
+    def get_directory_size(directory):
+        total_size = 0
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                total_size += os.path.getsize(filepath)
+        return total_size
+
+    def convert_size(size_bytes):
+        import math
+        if size_bytes == 0:
+            return "0B"
+        size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+        i = int(math.floor(math.log(size_bytes, 1024)))
+        p = math.pow(1024, i)
+        s = round(size_bytes / p, 2)
+        return "%s %s" % (s, size_name[i])
+
+    def delete_files():
+        import easygui, zipfile
+        print('Use deletefiles.txt to move files that need to be deleted to a new path while keeping the directory structure and create a list of files in the zip file for the update reversal process.')
+        org_dir = os.getcwd()
+        game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Genshin Impact/Genshin Impact game/', filetypes=['*.exe'])
+        game_dir = os.path.split(game_dir)[0]
+        game_del_path = easygui.fileopenbox(msg='Select the game data update zip file', filetypes=['*.zip'])
+        original_size = get_directory_size(game_dir)
+        os.chdir(game_dir)
+        des_folder = os.path.join(os.getcwd(), os.path.normpath('$deletefiles'))
+        try:
+            os.mkdir(des_folder)
+        except:
+            pass
+        os.chdir(org_dir)
+
+        with zipfile.ZipFile(game_del_path, 'r') as zip_ref:
+            data_structure = zip_ref.namelist()
+            if 'deletefiles.txt' in data_structure:
+                with zip_ref.open('deletefiles.txt') as file:
+                    text_content = file.read().decode('utf-8')
+                    text_content = text_content.split('\n')
+                    for file_path in text_content:
+                        rel_file_path = os.path.normpath(file_path)
+                        file_path = os.path.join(game_dir, rel_file_path)
+                        try:
+                            des_path = os.path.join(des_folder, rel_file_path)
+                            try:
+                                os.makedirs(os.path.dirname(des_path))
+                            except:
+                                pass
+                            os.rename(file_path.strip(), des_path.strip())
+                            print(f"Moved {file_path} to {des_path}")
+                        except Exception as error:
+                            print(error)
+            else:
+                input("File 'deletefiles.txt' does not exist in the zip file.")
+                os._exit(404)
+
+        data_structure_path = os.path.join(des_folder, os.path.normpath(f'{os.path.split(game_del_path)[-1]}.txt'))
+        with open(data_structure_path, 'w') as f:
+            for item in data_structure:
+                f.write("%s\n" % item)
+
+        deletion_size = get_directory_size(des_folder)
+        print('\nIn case files have been overwritten, it is possible to change the MHY version in the archiver to the previous version and use Re-download Resources to reverse the update.')
+        print(f'Zip file structure: "{data_structure_path}"')
+        input(f'Original size - Deletion size ≈ Remaining size\n{convert_size(original_size)} - {convert_size(deletion_size)} ≈ {convert_size(original_size-deletion_size)}\n')
+        os._exit(0)
     try:
         print("Pre-downloaded version!!\nPre-download version " + dic['data']['pre_download_game']['latest']['version'] + "\n")
         if input("Press U to switch to pre-download mode\nPress another key to return to the current version\n>>> ").lower() == "u":
@@ -191,6 +258,7 @@ try:
     print("2. Update to", latest_ver)
     print("3. Update from an older version")
     print("4. Re-download resources")
+    print("5. Execute deletefiles.txt")
     print("0. Open archiver\n")
 
     menu = int(input("Select one: "))
@@ -302,6 +370,8 @@ try:
             if keyboard.is_pressed('esc'):
                 break
         os._exit(0)
+    elif menu == 5:
+        delete_files()
     elif menu == 0:
         archive(latest_ver)
     else:
@@ -336,5 +406,5 @@ try:
         print('Requested URL: "'+url+'"')
         input()
     os._exit(0)
-except:
-    pass
+except Exception as error:
+    print(error)
