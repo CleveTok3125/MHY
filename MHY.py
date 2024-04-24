@@ -236,11 +236,36 @@ try:
             for item in data_structure:
                 f.write("%s\n" % item)
 
+        with open(os.path.join(game_dir, "deletefiles has been executed.txt"), "w+") as file:
+            file.write('Do not delete this file as it is used to determine whether the default deletefiles.txt should be used. If this file exists, Game Patcher will automatically delete it and will not use deletefiles.txt to avoid conflicts with TH_GP.bat.')
+
         deletion_size = get_directory_size(des_folder)
         print('\nIn case files have been overwritten, it is possible to change the MHY version in the archiver to the previous version and use Re-download Resources to reverse the update.')
         print(f'Zip file structure: "{data_structure_path}"')
         input(f'Original size - Deletion size ≈ Remaining size\n{convert_size(original_size)} - {convert_size(deletion_size)} ≈ {convert_size(original_size-deletion_size)}\n')
         os._exit(0)
+
+    def extract_zip(zip_file, extract_to):
+        try:
+            from tqdm import tqdm
+            import zipfile
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                for member in tqdm(zip_ref.infolist(), desc="Extracting", unit="files"):
+                    file_path = os.path.join(extract_to, member.filename)
+                    if os.path.exists(file_path):
+                        if os.path.getsize(file_path) != member.file_size:
+                            with zip_ref.open(member) as source, open(file_path, 'wb') as target:
+                                target.write(source.read())
+                    else:
+                        try:
+                            os.makedirs(os.path.dirname(file_path))
+                        except:
+                            pass
+                        with zip_ref.open(member) as source, open(file_path, 'wb') as target:
+                            target.write(source.read())
+        except Exception as error:
+            print(error)
+
     try:
         print("Pre-downloaded version!!\nPre-download version " + dic['data']['pre_download_game']['latest']['version'] + "\n")
         if input("Press U to switch to pre-download mode\nPress another key to return to the current version\n>>> ").lower() == "u":
@@ -259,6 +284,9 @@ try:
     print("3. Update from an older version")
     print("4. Re-download resources")
     print("5. Execute deletefiles.txt")
+    print("6. Unzip each file one by one")
+    print("7. Game patch hdifffiles generator")
+    print("8. Game patcher")
     print("0. Open archiver\n")
 
     menu = int(input("Select one: "))
@@ -327,7 +355,13 @@ try:
                 dir_link = (latest['decompressed_path'] + dirs).replace('ScatteredFiles./', 'ScatteredFiles/', 1)
                 
                 if requests.get(dir_link).status_code == 404:
-                    None # Skip not found file(s)
+                    in_log = {
+                    'return message':'file not found',
+                    'file path': filepath,
+                    'url': dir_link
+                    }
+                    logs.append(in_log)
+                    print(in_log)
                 else:
                     temp_dir_game = (temp_game_dir + (dirs.replace('./', '\\', 1))).replace('/', '\\')
                     full_dir_game = (game_dir + (dirs.replace('./', '\\', 1))).replace('/', '\\')
@@ -340,19 +374,29 @@ try:
                             try:
                                 os.makedirs(temp_dir_game)
                             except:
-                                None # just in case
-                        download(dir_link, temp_dir_game)
-                        local_file_size = int(os.path.getsize(temp_full_dir_game))
+                                pass # just in case
 
-                        if local_file_size == check_file_size:
-                            shutil.move(temp_full_dir_game, full_dir_game)
-                        else:
+                        if check_file_size == int(os.path.getsize(full_dir_game)): # Force redownload of duplicate files replaced with True
                             in_log = {
-                            'return message':'incomplete download file',
+                            'return message':'Skip downloading duplicate files',
                             'file path': filepath,
                             'url': dir_link
                             }
                             logs.append(in_log)
+                            print(in_log)
+                        else:
+                            download(dir_link, temp_dir_game)
+                            local_file_size = int(os.path.getsize(temp_full_dir_game))
+
+                            if local_file_size == check_file_size:
+                                shutil.move(temp_full_dir_game, full_dir_game)
+                            else:
+                                in_log = {
+                                'return message':'incomplete download file',
+                                'file path': filepath,
+                                'url': dir_link
+                                }
+                                logs.append(in_log)
                     except:
                         in_log = {
                         'return message':'file download failed',
@@ -360,6 +404,7 @@ try:
                         'url': dir_link
                         }
                         logs.append(in_log)
+                        print(in_log)
         shutil.rmtree(temp_game_dir)
         os.chdir(org_dir)
         if len(logs)>0:
@@ -372,6 +417,156 @@ try:
         os._exit(0)
     elif menu == 5:
         delete_files()
+    elif menu == 6:
+        import easygui
+        print('Unzip each file one by one to minimize storage usage, ignore files of the same size and overwrite files of different sizes')
+        zip_file = easygui.fileopenbox(msg='Select zip file', filetypes=['*.zip'])
+        extract_to = folder_chooser()
+        extract_zip(zip_file, extract_to)
+        input('Zip extraction completed...\n')
+        os._exit(0)
+    elif menu == 7:
+        import zipfile, easygui
+        req = 0
+        game_dir = 0
+        game_vo_path = [0, 0, 0, 0]
+        game_common_path = 0
+        while True:
+            os.system('cls')
+            print("To run TH_GP.bat, you need Audio Common's hdifffiles.txt and one of the optional languages: Chinese, English, Japanese, Korean. This is a hdifffiles generator from a game data zip file.\nFor example: hdifffiles.txt from game_x.y.z_x.y.z_hdiff_RANDOMCODE.zip is Audio Common.\nhdifffiles.txt from en-us_x.y.z_x.y.z_hdiff_RANDOMCODE.zip is hdifffiles of the file containing the voiceover language.")
+            print('Game path:', game_dir)
+            print('AudioPatch path:', game_common_path)
+            print('AudioPatch Language path:', game_vo_path)
+            print('1. Select game path*')
+            print('2. Select the game data update zip file*')
+            print('3. Select the update language (Chinese) game data zip file')
+            print('4. Select the update language (English) game data zip file')
+            print('5. Select the update language (Japanese) game data zip file')
+            print('6. Select the update language (Korean) game data zip file')
+            print('0. Done')
+            menu1 = int(input('Select one: '))
+            if menu1 == 1:
+                game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Genshin Impact/Genshin Impact game/', filetypes=['*.exe'])
+                game_dir = os.path.split(game_dir)[0]
+                req += 100
+            elif menu1 == 2:
+                game_common_path = easygui.fileopenbox(msg='Select the game data update zip file', filetypes=['*.zip'])
+                req += 10
+            elif menu1 == 3:
+                game_vo_path[0] = easygui.fileopenbox(msg='Select the update language (Chinese) game data zip file', filetypes=['*.zip'])
+                req += 1
+            elif menu1 == 4:
+                game_vo_path[1] = easygui.fileopenbox(msg='Select the update language (English) game data zip file', filetypes=['*.zip'])
+                req += 1
+            elif menu1 == 5:
+                game_vo_path[2] = easygui.fileopenbox(msg='Select the update language (Japanese) game data zip file', filetypes=['*.zip'])
+                req += 1
+            elif menu1 == 6:
+                game_vo_path[3] = easygui.fileopenbox(msg='Select the update language (Korean) game data zip file', filetypes=['*.zip'])
+                req += 1
+            elif menu1 == 0:
+                if req >= 111 and game_common_path != 0 and game_dir != 0:
+                    with zipfile.ZipFile(game_common_path, 'r') as zipf:
+                        zipf.extract('hdifffiles.txt', game_dir)
+                    input_file_path = os.path.join(game_dir, 'hdifffiles.txt')
+                    output_file_path = os.path.join(game_dir, 'TH_GP_AudioPatch_Common.txt')
+                    with open(input_file_path, 'r') as input_file:
+                        content = input_file.read()
+                        content = content.replace('{"remoteName": "', '')
+                        content = content.replace('"}', '')
+                        content = content.replace('/', '\\')
+                    input_file.close()
+                    with open(input_file_path, 'w+') as output_file:
+                        output_file.write(content)
+                    output_file.close()
+                    if os.path.exists(output_file_path):
+                        os.remove(output_file_path)
+                    os.rename(input_file_path, output_file_path)
+                    for i in range(0, len(game_vo_path)):
+                        if game_vo_path[i] != 0:
+                            with zipfile.ZipFile(game_vo_path[i], 'r') as zipf:
+                                zipf.extract('hdifffiles.txt', game_dir)
+                                if i == 0:
+                                    new_name = 'TH_GP_AudioPatch_Chinese.txt'
+                                elif i == 1:
+                                    new_name = 'TH_GP_AudioPatch_English.txt'
+                                elif i == 2:
+                                    new_name = 'TH_GP_AudioPatch_Japanese.txt'
+                                elif i == 3:
+                                    new_name = 'TH_GP_AudioPatch_Korean.txt'
+                                else:
+                                    os._exit(403)
+                            input_file_path = os.path.join(game_dir, 'hdifffiles.txt')
+                            output_file_path = os.path.join(game_dir, new_name)
+                            with open(input_file_path, 'r') as input_file:
+                                content = input_file.read()
+                                content = content.replace('{"remoteName": "', '')
+                                content = content.replace('"}', '')
+                                content = content.replace('/', '\\')
+                            input_file.close()
+                            with open(input_file_path, 'w+') as output_file:
+                                output_file.write(content)
+                            output_file.close()
+                            if os.path.exists(output_file_path):
+                                os.remove(output_file_path)
+                            os.rename(input_file_path, output_file_path)
+                    break
+                else:
+                    input('Items marked with * and one of 4 options 3-6 are required')
+            else:
+                input("Invalid selection\n")
+        input('Completed.')
+        os._exit(0)
+    elif menu == 8:
+        import zipfile, io, easygui, subprocess
+        print('Use modified GenshinPatcher (source: https://github.com/GamerYuan/GenshinPatcher/) to patch game data.')
+        game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Genshin Impact/Genshin Impact game/', filetypes=['*.exe'])
+        game_dir = os.path.split(game_dir)[0]
+        del_file1 = os.path.join(game_dir, 'deletefiles has been executed.txt')
+        del_file2 = os.path.join(game_dir, 'deletefiles.txt')
+        if os.path.exists(del_file1):
+            try:
+                print('Deleting deletefiles.txt...')
+                os.remove(del_file2)
+                os.remove(del_file1)
+                print(f'Deleted successfully.\n{del_file2}\n{del_file1}')
+            except:
+                input(f'Delete failed. Please delete it manually and continue.\n{del_file2}\n{del_file1}')
+        for i in ['TH_GP_AudioPatch_Chinese.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_Japanese.txt', 'TH_GP_AudioPatch_Korean.txt']:
+            if (not os.path.exists(os.path.join(game_dir, 'TH_GP_AudioPatch_Common.txt'))) or (not os.path.exists(os.path.exists(os.path.join(game_dir, i)))):
+                print('File hdifffiles not found. Please use Game patch hdifffiles generator to create.')
+                os._exit(404)
+        print('Downloading HDiffPatch (x64)...')
+        api = 'https://api.github.com/repos/sisong/HDiffPatch/releases/latest'
+        fetch = json.loads(requests.get(api).text)
+        url = fetch['assets'][9]['browser_download_url']
+        target_files = ["hdiffz.exe", "hpatchz.exe"]
+        response = requests.get(url)
+        if response.status_code == 200:
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                for file_info in zip_ref.infolist():
+                    file_name = os.path.basename(file_info.filename)
+                    if file_name in target_files:
+                        file_data = zip_ref.read(file_info.filename)
+                        destination_file_path = os.path.join(game_dir, file_name)
+                        with open(destination_file_path, 'wb') as destination_file:
+                            destination_file.write(file_data)
+                        print(f'File {file_name} has been moved to "{game_dir}"')
+        else:
+            print("Error downloading zip file: ", response.status_code)
+            os._exit(0)
+        api = 'https://raw.githubusercontent.com/CleveTok3125/MHY/main/TH_GP.bat'
+        response = requests.get(api)
+        if response.status_code == 200:
+            with open(os.path.join(game_dir, 'TH_GP.bat'), 'wb') as file:
+                file.write(response.content)
+            print(f'File TH_GP.bat has been moved to "{game_dir}"')
+        else:
+            print("Error downloading zip file: ", response.status_code)
+        print('Running TH_GP.bat...')
+        subprocess.run([os.path.join(game_dir, 'TH_GP.bat')])
+        input('Completed.')
+        os._exit(0)
     elif menu == 0:
         archive(latest_ver)
     else:
