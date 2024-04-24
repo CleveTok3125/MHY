@@ -232,7 +232,7 @@ try:
                 os._exit(404)
 
         data_structure_path = os.path.join(des_folder, os.path.normpath(f'{os.path.split(game_del_path)[-1]}.txt'))
-        with open(data_structure_path, 'w') as f:
+        with open(data_structure_path, 'w+') as f:
             for item in data_structure:
                 f.write("%s\n" % item)
 
@@ -246,14 +246,18 @@ try:
         os._exit(0)
 
     def extract_zip(zip_file, extract_to):
+        logs = []
         try:
             from tqdm import tqdm
-            import zipfile
+            import zipfile, datetime
             with zipfile.ZipFile(zip_file, 'r') as zip_ref:
                 for member in tqdm(zip_ref.infolist(), desc="Extracting", unit="files"):
                     file_path = os.path.join(extract_to, member.filename)
+                    size_file_path = -1
+                    member_datetime = datetime.datetime(*member.date_time)
                     if os.path.exists(file_path):
-                        if os.path.getsize(file_path) != member.file_size:
+                        size_file_path = os.path.getsize(file_path)
+                        if (size_file_path != member.file_size) or (datetime.datetime.fromtimestamp(os.path.getctime(file_path)) < member_datetime):
                             with zip_ref.open(member) as source, open(file_path, 'wb') as target:
                                 target.write(source.read())
                     else:
@@ -263,8 +267,13 @@ try:
                             pass
                         with zip_ref.open(member) as source, open(file_path, 'wb') as target:
                             target.write(source.read())
+
+                    if not ((os.path.exists(file_path))) or ((size_file_path != member.file_size) and (datetime.datetime.fromtimestamp(os.path.getctime(file_path)) < member_datetime)):
+                        logs.append(file_path)
         except Exception as error:
+            logs.append(file_path)
             print(error)
+        return logs
 
     try:
         print("Pre-downloaded version!!\nPre-download version " + dic['data']['pre_download_game']['latest']['version'] + "\n")
@@ -422,7 +431,11 @@ try:
         print('Unzip each file one by one to minimize storage usage, ignore files of the same size and overwrite files of different sizes')
         zip_file = easygui.fileopenbox(msg='Select zip file', filetypes=['*.zip'])
         extract_to = folder_chooser()
-        extract_zip(zip_file, extract_to)
+        logs = extract_zip(zip_file, extract_to)
+        if len(logs) > 0:
+            print('List of files unpacking to the target directory failed:')
+            for i in logs:
+                print(i, end='\n')
         input('Zip extraction completed...\n')
         os._exit(0)
     elif menu == 7:
