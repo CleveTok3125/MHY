@@ -3,16 +3,28 @@ try:
     global pre_download
     pre_download = False
 
+    game_selector = ["Zenless Zone Zero", "Honkai: Star Rail", "Genshin Impact"]
+    for i in range(len(game_selector)):
+        print(f'{i+1}. {game_selector[i]}')
+
+    game_selected = int(input("Select one: "))-1
+
     try:
+        import re
         dic_path = open('archive-mode', 'r').read()
         dic_f = open(dic_path, 'r').read()
+        invalid_chars = r'[\/:*?"<>|]'
+        gn = game_selector[game_selected]
+        gn = re.sub(invalid_chars, '', gn)
+        if gn not in dic_path:
+            raise ValueError("Not archived game")
         dic = json.loads(dic_f)
-        game = dic['data']['game']
-        latest = game['latest']
-        diffs = game['diffs']
+        game = dic['data']['game_packages'][game_selected]['main']
+        latest = game['major']
+        diffs = game['patches']
         latest_ver = latest['version'] + ' (archived)'
     except:
-        api = "https://sdk-os-static.mihoyo.com/hk4e_global/mdk/launcher/api/resource?launcher_id=10&key=gcStgarh"
+        api = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8"
         try:
             r = requests.get(api)
         except:
@@ -20,11 +32,10 @@ try:
             input("\nPress any key to exit...")
             os._exit(0)
         dic = json.loads((r).text)
-        game = dic['data']['game']
-        latest = game['latest']
-        diffs = game['diffs']
+        game = dic['data']['game_packages'][game_selected]['main']
+        latest = game['major']
+        diffs = game['patches']
         latest_ver = latest['version']
-
 
     def check_connection():
         os.system('cls')
@@ -37,11 +48,9 @@ try:
             os._exit(0)
 
     def latest_no_voice_packs():
-        os.system('cls')
-        size = str(round(int(latest['package_size']) / 1024**3, 2)) + 'GB'
-        md5 = latest['md5']
-        print("Download " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
-        return latest['path']
+        # Due to the issue of large download size, some versions before 4.8 and later will no longer be able to download the entire client in one link.
+        input("This feature is no longer available. Please use segment downloads instead.\n")
+        os._exit(0)
 
     def latest_voice_packs(mode):
         os.system('cls')
@@ -49,33 +58,38 @@ try:
             # 1 English
             # 2 Japanese
             # 3 Korean
-        voice_packs = latest['voice_packs']
+        voice_packs = latest['audio_pkgs']
         cdvoice = voice_packs[mode]
-        size = str(round(int(cdvoice['package_size']) / 1024**3, 2)) + 'GB'
+        size = str(round(int(cdvoice['size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
         print("Download " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
-        return cdvoice['path']
+        return cdvoice['url']
 
     def latest_segments():
         os.system('cls')
-        size = str(round(int(latest['package_size']) / 1024**3, 2)) + 'GB'
-        print("Download " + latest_ver + " (no voice packs + segments)\nSize: " + size + "\n")
+        print("Download " + latest_ver + " (no voice packs + segments)\n")
         list2download = []
-        for i in latest['segments']:
+        for i in latest['game_pkgs']:
             md5 = i['md5']
-            url = i['path']
+            size = i['size']
+            url = i['url']
             list2download.append(url)
-            print("File name: " + os.path.split(url)[-1] + "\nMD5: " + md5.upper() + "\n")
+            print("File name: " + os.path.split(url)[-1] + "\nMD5: " + md5.upper() + "\nSize: " + str(round(int(size) / 1024**3, 2)) + 'GB' + "\n")
         return list2download
 
     def diffs_no_voice_packs(mode):
         os.system('cls')
-        size = str(round(int(diffs[mode]['package_size']) / 1024**3, 2)) + 'GB'
-        md5 = diffs[mode]['md5']
         old_ver = diffs[mode]['version']
-        print("Download " + old_ver + " to " + latest_ver + " (no voice packs)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
-        return diffs[mode]['path']
+        print("Download " + old_ver + " to " + latest_ver + " (no voice packs + segments)\n")
+        list2download = []
+        for i in diffs[mode]['game_pkgs']:
+            size = i['size']
+            md5 = i['md5']
+            url = i['url']
+            list2download.append(url)
+            print("File name: " + os.path.split(url)[-1] + "\nMD5: " + md5.upper() + "\nSize: " + str(round(int(size) / 1024**3, 2)) + 'GB' + "\n")
+        return list2download
 
     def diffs_voice_packs(mode, mode1):
         os.system('cls')
@@ -84,13 +98,13 @@ try:
             # 2 Japanese
             # 3 Korean
         old_ver = diffs[mode]['version']
-        voice_packs = diffs[mode]['voice_packs']
+        voice_packs = diffs[mode]['audio_pkgs']
         cdvoice = voice_packs[mode1]
-        size = str(round(int(cdvoice['package_size']) / 1024**3, 2)) + 'GB'
+        size = str(round(int(cdvoice['size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
         print("Download " + old_ver + " to " + latest_ver + " (" + language.upper() + " voice pack)\nSize: " + size + "\nMD5: " + md5.upper() + "\n")
-        return cdvoice['path']
+        return cdvoice['url']
 
     def folder_chooser():
         import win32gui
@@ -136,12 +150,15 @@ try:
                 os.mkdir('archive')
             except:
                 pass
-
+            import re
             content = requests.get(api, stream=True)
+            invalid_chars = r'[\/:*?"<>|]'
+            gn = game_selector[game_selected]
+            gn = re.sub(invalid_chars, '', gn)
             if pre_download:
-                archive_path = 'archive/archive-'+str(latest_ver)+'-predownload.json'
+                archive_path = 'archive/archive-'+gn+'_'+str(latest_ver)+'-predownload.json'
             else:
-                archive_path = 'archive/archive-'+str(latest_ver)+'.json'
+                archive_path = 'archive/archive-'+gn+'_'+str(latest_ver)+'.json'
             
             open(archive_path, 'wb').write(r.content)
             input('Successfully archived: ' + archive_path)
@@ -276,11 +293,11 @@ try:
         return logs
 
     try:
-        print("Pre-downloaded version!!\nPre-download version " + dic['data']['pre_download_game']['latest']['version'] + "\n")
+        print("Pre-downloaded version!!\nPre-download version " + dic['data']['game_packages'][game_selected]['pre_download']['major']['version'] + "\n")
         if input("Press U to switch to pre-download mode\nPress another key to return to the current version\n>>> ").lower() == "u":
-            game = dic['data']['pre_download_game']
-            latest = game['latest']
-            diffs = game['diffs']
+            game = dic['data']['game_packages'][game_selected]['pre_download']
+            latest = game['major']
+            diffs = game['patches']
             latest_ver = latest['version']
             pre_download = True
         os.system('cls')
