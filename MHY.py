@@ -97,9 +97,13 @@ try:
             # 1 English
             # 2 Japanese
             # 3 Korean
+        langlist = ['zh-cn', 'en-us', 'ja-jp', 'ko-kr']
         old_ver = diffs[mode]['version']
         voice_packs = diffs[mode]['audio_pkgs']
-        cdvoice = voice_packs[mode1]
+        for cdvoice in voice_packs:
+            if langlist[mode1] == cdvoice['language']:
+                break
+            raise ValueError('Requested language pack could not be found.')
         size = str(round(int(cdvoice['size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
@@ -626,10 +630,11 @@ try:
         else:
             input("Invalid selection\n")
             os._exit(0)
-    except:
-        print('The file could not be downloaded, the link was removed, or the link could not be fetched due to publisher not uploading link for this item. Switch to archive mode to find available links.')
-        print('Requested URL: "'+url+'"')
+    except Exception as error:
+        print('File could not be downloaded, link was removed, or the link could not be fetched due to publisher not uploading link for this item. Switch to archive mode to find available links.')
+        print(f'Requested URL: {url}')
+        print(f'For debugging: {error}')
         input()
     os._exit(0)
 except Exception as error:
-    print(error)
+    print("\nEncountered an unexpected error:", error)
