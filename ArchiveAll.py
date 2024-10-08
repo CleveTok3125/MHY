@@ -1,11 +1,10 @@
-import requests, json, os, time
+import requests, json, os, time, re
 api = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8"
 try:
     os.mkdir('archive')
 except:
     pass
 game_selector = ["Zenless Zone Zero", "Honkai: Star Rail", "Genshin Impact"]
-import re
 content = requests.get(api, stream=True)
 invalid_chars = r'[\/:*?"<>|]'
 for game_selected in range(len(game_selector)):
