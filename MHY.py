@@ -58,8 +58,15 @@ try:
             # 1 English
             # 2 Japanese
             # 3 Korean
+        langlist = ['zh-cn', 'en-us', 'ja-jp', 'ko-kr']
         voice_packs = latest['audio_pkgs']
-        cdvoice = voice_packs[mode]
+        found = False
+        for cdvoice in voice_packs:
+            if langlist[mode] == cdvoice['language']:
+                found = True
+                break
+        if not found:
+            raise ValueError(f'Requested voice pack "{langlist[mode]}" could not be found.')
         size = str(round(int(cdvoice['size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
         language = cdvoice['language']
