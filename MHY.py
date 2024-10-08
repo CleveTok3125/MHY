@@ -100,9 +100,12 @@ try:
         langlist = ['zh-cn', 'en-us', 'ja-jp', 'ko-kr']
         old_ver = diffs[mode]['version']
         voice_packs = diffs[mode]['audio_pkgs']
+        found = False
         for cdvoice in voice_packs:
             if langlist[mode1] == cdvoice['language']:
+                found = True
                 break
+        if not found:
             raise ValueError(f'Requested voice pack "{langlist[mode1]}" could not be found.')
         size = str(round(int(cdvoice['size']) / 1024**3, 2)) + 'GB'
         md5 = cdvoice['md5']
