@@ -562,55 +562,111 @@ try:
         input('Completed.')
         os._exit(0)
     elif menu == 8:
-        import zipfile, io, easygui, subprocess
-        print('Use modified GenshinPatcher (source: https://github.com/GamerYuan/GenshinPatcher/) to patch game data.')
-        game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Genshin Impact/Genshin Impact game/', filetypes=['*.exe'])
-        game_dir = os.path.split(game_dir)[0]
-        del_file1 = os.path.join(game_dir, 'deletefiles has been executed.txt')
-        del_file2 = os.path.join(game_dir, 'deletefiles.txt')
-        if os.path.exists(del_file1):
-            try:
-                print('Deleting deletefiles.txt...')
-                os.remove(del_file2)
-                os.remove(del_file1)
-                print(f'Deleted successfully.\n{del_file2}\n{del_file1}')
-            except:
-                input(f'Delete failed. Please delete it manually and continue.\n{del_file2}\n{del_file1}')
-        for i in ['TH_GP_AudioPatch_Chinese.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_Japanese.txt', 'TH_GP_AudioPatch_Korean.txt']:
-            if (not os.path.exists(os.path.join(game_dir, 'TH_GP_AudioPatch_Common.txt'))) or (not os.path.exists(os.path.exists(os.path.join(game_dir, i)))):
-                print('File hdifffiles not found. Please use Game patch hdifffiles generator to create.')
-                os._exit(404)
-        print('Downloading HDiffPatch (x64)...')
-        api = 'https://api.github.com/repos/sisong/HDiffPatch/releases/latest'
-        fetch = json.loads(requests.get(api).text)
-        url = fetch['assets'][9]['browser_download_url']
-        target_files = ["hdiffz.exe", "hpatchz.exe"]
-        response = requests.get(url)
-        if response.status_code == 200:
-            with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
-                for file_info in zip_ref.infolist():
-                    file_name = os.path.basename(file_info.filename)
-                    if file_name in target_files:
-                        file_data = zip_ref.read(file_info.filename)
-                        destination_file_path = os.path.join(game_dir, file_name)
-                        with open(destination_file_path, 'wb') as destination_file:
-                            destination_file.write(file_data)
-                        print(f'File {file_name} has been moved to "{game_dir}"')
-        else:
-            print("Error downloading zip file: ", response.status_code)
+        print('1. GenshinPatcher (TH_GP)\n2. ZenlessPatcher\n')
+        menu1 = int(input('Choose patcher: '))
+        if menu1 == 1:
+            import zipfile, io, easygui, subprocess
+            print('Use modified GenshinPatcher (source: https://github.com/GamerYuan/GenshinPatcher/) to patch game data.')
+            game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Genshin Impact/Genshin Impact game/', filetypes=['*.exe'])
+            game_dir = os.path.split(game_dir)[0]
+            del_file1 = os.path.join(game_dir, 'deletefiles has been executed.txt')
+            del_file2 = os.path.join(game_dir, 'deletefiles.txt')
+            if os.path.exists(del_file1):
+                try:
+                    print('Deleting deletefiles.txt...')
+                    os.remove(del_file2)
+                    os.remove(del_file1)
+                    print(f'Deleted successfully.\n{del_file2}\n{del_file1}')
+                except:
+                    input(f'Delete failed. Please delete it manually and continue.\n{del_file2}\n{del_file1}')
+            for i in ['TH_GP_AudioPatch_Chinese.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_Japanese.txt', 'TH_GP_AudioPatch_Korean.txt']:
+                if (not os.path.exists(os.path.join(game_dir, 'TH_GP_AudioPatch_Common.txt'))) or (not os.path.exists(os.path.exists(os.path.join(game_dir, i)))):
+                    print('File hdifffiles not found. Please use Game patch hdifffiles generator to create.')
+                    os._exit(404)
+            print('Downloading HDiffPatch (x64)...')
+            api = 'https://api.github.com/repos/sisong/HDiffPatch/releases/latest'
+            fetch = json.loads(requests.get(api).text)
+            url = fetch['assets'][9]['browser_download_url']
+            target_files = ["hdiffz.exe", "hpatchz.exe"]
+            response = requests.get(url)
+            if response.status_code == 200:
+                with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                    for file_info in zip_ref.infolist():
+                        file_name = os.path.basename(file_info.filename)
+                        if file_name in target_files:
+                            file_data = zip_ref.read(file_info.filename)
+                            destination_file_path = os.path.join(game_dir, file_name)
+                            with open(destination_file_path, 'wb') as destination_file:
+                                destination_file.write(file_data)
+                            print(f'File {file_name} has been moved to "{game_dir}"')
+            else:
+                print("Error downloading zip file: ", response.status_code)
+                os._exit(0)
+            api = 'https://raw.githubusercontent.com/CleveTok3125/MHY/main/TH_GP.bat'
+            response = requests.get(api)
+            if response.status_code == 200:
+                with open(os.path.join(game_dir, 'TH_GP.bat'), 'wb') as file:
+                    file.write(response.content)
+                print(f'File TH_GP.bat has been moved to "{game_dir}"')
+            else:
+                print("Error downloading zip file: ", response.status_code)
+            print('Running TH_GP.bat...')
+            subprocess.run([os.path.join(game_dir, 'TH_GP.bat')])
+            input('Completed.')
             os._exit(0)
-        api = 'https://raw.githubusercontent.com/CleveTok3125/MHY/main/TH_GP.bat'
-        response = requests.get(api)
-        if response.status_code == 200:
-            with open(os.path.join(game_dir, 'TH_GP.bat'), 'wb') as file:
-                file.write(response.content)
-            print(f'File TH_GP.bat has been moved to "{game_dir}"')
+        elif menu1 == 2:
+            import zipfile, io, easygui, subprocess
+            # Using the same method as TH_GP
+            game_dir = easygui.fileopenbox(msg='Select game path', default=r'C:/Program Files/Zenless Zone Zero/Zenless Zone Zero Game/', filetypes=['*.exe'])
+            game_dir = os.path.split(game_dir)[0]
+            del_file1 = os.path.join(game_dir, 'deletefiles has been executed.txt')
+            del_file2 = os.path.join(game_dir, 'deletefiles.txt')
+            if os.path.exists(del_file1):
+                try:
+                    print('Deleting deletefiles.txt...')
+                    os.remove(del_file2)
+                    os.remove(del_file1)
+                    print(f'Deleted successfully.\n{del_file2}\n{del_file1}')
+                except:
+                    input(f'Delete failed. Please delete it manually and continue.\n{del_file2}\n{del_file1}')
+            for i in ['TH_GP_AudioPatch_Chinese.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_English.txt', 'TH_GP_AudioPatch_Japanese.txt', 'TH_GP_AudioPatch_Korean.txt']:
+                if (not os.path.exists(os.path.join(game_dir, 'TH_GP_AudioPatch_Common.txt'))) or (not os.path.exists(os.path.exists(os.path.join(game_dir, i)))):
+                    print('File hdifffiles not found. Please use Game patch hdifffiles generator to create.')
+                    os._exit(404)
+            print('Downloading HDiffPatch (x64)...')
+            api = 'https://api.github.com/repos/sisong/HDiffPatch/releases/latest'
+            fetch = json.loads(requests.get(api).text)
+            url = fetch['assets'][9]['browser_download_url']
+            target_files = ["hdiffz.exe", "hpatchz.exe"]
+            response = requests.get(url)
+            if response.status_code == 200:
+                with zipfile.ZipFile(io.BytesIO(response.content)) as zip_ref:
+                    for file_info in zip_ref.infolist():
+                        file_name = os.path.basename(file_info.filename)
+                        if file_name in target_files:
+                            file_data = zip_ref.read(file_info.filename)
+                            destination_file_path = os.path.join(game_dir, file_name)
+                            with open(destination_file_path, 'wb') as destination_file:
+                                destination_file.write(file_data)
+                            print(f'File {file_name} has been moved to "{game_dir}"')
+            else:
+                print("Error downloading zip file: ", response.status_code)
+                os._exit(0)
+            '''api = 'https://raw.githubusercontent.com/CleveTok3125/MHY/main/ZenlessPatcher.py'
+            response = requests.get(api)
+            if response.status_code == 200:
+                with open(os.path.join(game_dir, 'ZenlessPatcher.py'), 'wb') as file:
+                    file.write(response.content)
+                print(f'File ZenlessPatcher.py has been moved to "{game_dir}"')
+            else:
+                print("Error downloading zip file: ", response.status_code)'''
+            print('Running ZenlessPatcher.py...')
+            subprocess.run(['python', os.path.join(game_dir, 'ZenlessPatcher.py')])
+            input('Completed.')
+            os._exit(0)
         else:
-            print("Error downloading zip file: ", response.status_code)
-        print('Running TH_GP.bat...')
-        subprocess.run([os.path.join(game_dir, 'TH_GP.bat')])
-        input('Completed.')
-        os._exit(0)
+            input("Invalid selection\n")
+            os._exit()
     elif menu == 0:
         archive(latest_ver)
     else:

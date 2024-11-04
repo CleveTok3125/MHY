@@ -62,8 +62,8 @@ def move_language_files(working_dir):
     shutil.rmtree(target, ignore_errors=True)
     try:
         shutil.copytree(source, target)
-    except ValueError as e:
-        print(e)
+    except:
+        None
 
     print("Moved audio files to StreamingAssets.")
 
