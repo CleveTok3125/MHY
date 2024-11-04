@@ -60,7 +60,7 @@ def move_language_files(working_dir):
     source = os.path.join(working_dir, "ZenlessZoneZero_Data", "Persistent", "Audio")
     target = os.path.join(working_dir, "ZenlessZoneZero_Data", "StreamingAssets", "Audio")
     shutil.rmtree(target, ignore_errors=True)
-    shutil.copytree(source, target)
+    shutil.copytree(source, target, ignore_errors=True)
 
     print("Moved audio files to StreamingAssets.")
 
