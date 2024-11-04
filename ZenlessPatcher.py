@@ -18,6 +18,12 @@ def main():
     language_installed = {lang: False for lang in languages}
     file_missing = False
     current_language = None
+    language_names = {
+        'Zh': 'Chinese',
+        'En': 'English',
+        'Ja': 'Japanese',
+        'Ko': 'Korean'
+    }
 
     print("Checking if all necessary files to update the game from Patch are present...")
     
@@ -26,9 +32,8 @@ def main():
             lang = line.strip()
             if lang in language_installed:
                 language_installed[lang] = True
-                current_language = lang
-
-                patch_file = os.path.join(working_dir, f"TH_GP_AudioPatch_{lang}.txt")
+                current_language = language_names.get(lang)
+                patch_file = os.path.join(working_dir, f"TH_GP_AudioPatch_{current_language}.txt")
                 if not os.path.exists(patch_file):
                     print(f"{patch_file} is missing.")
                     file_missing = True
@@ -42,16 +47,16 @@ def main():
         retry_query()
         return
 
-    move_language_files(working_dir, language_installed)
+    move_language_files(working_dir)
     
     if file_missing:
         retry_query()
         return
     
-    apply_patch(working_dir, language_installed)
+    apply_patch(working_dir, language_installed, language_names)
     cleanup(working_dir)
 
-def move_language_files(working_dir, language_installed):
+def move_language_files(working_dir):
     source = os.path.join(working_dir, "ZenlessZoneZero_Data", "Persistent", "Audio")
     target = os.path.join(working_dir, "ZenlessZoneZero_Data", "StreamingAssets", "Audio")
     shutil.rmtree(target, ignore_errors=True)
@@ -59,10 +64,10 @@ def move_language_files(working_dir, language_installed):
 
     print("Moved audio files to StreamingAssets.")
 
-def apply_patch(working_dir, language_installed):
+def apply_patch(working_dir, language_installed, language_names):
     print("Applying patches...")
-
     for lang, installed in language_installed.items():
+        lang = language_names.get(lang)
         if installed:
             patch_file = os.path.join(working_dir, f"TH_GP_AudioPatch_{lang}.txt")
             with open(patch_file, 'r') as f:
